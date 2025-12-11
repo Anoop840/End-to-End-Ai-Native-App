@@ -10,15 +10,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Code snippet is required" }, { status: 400 });
     }
 
-    if (fileName.includes('..')) {
-       return NextResponse.json({ error: "Invalid file path detected." }, { status: 400 });
+    const requestedPath = path.resolve(path.join(process.cwd(), fileName));
+    const projectRoot = path.resolve(process.cwd());
+
+    // 2. Security Check: Ensure the resolved path is a subpath of the project root.
+    if (!requestedPath.startsWith(projectRoot)) {
+       return NextResponse.json({ error: "Invalid file path detected: attempting to write outside the project directory." }, { status: 400 });
     }
     
-    // Define the full path for the file (e.g., in the project root)
-    const filePath = path.join(process.cwd(), fileName);
-
     // Write the new content to the file
-    await fs.writeFile(filePath, codeSnippet);
+    await fs.writeFile(requestedPath, codeSnippet);
 
     return NextResponse.json({ message: `Successfully applied changes to ${fileName}.` });
 
