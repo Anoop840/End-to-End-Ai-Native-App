@@ -10,6 +10,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Code snippet is required" }, { status: 400 });
     }
 
+    if (fileName.includes('..')) {
+       return NextResponse.json({ error: "Invalid file path detected." }, { status: 400 });
+    }
+    
     // Define the full path for the file (e.g., in the project root)
     const filePath = path.join(process.cwd(), fileName);
 

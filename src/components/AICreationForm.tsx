@@ -1,12 +1,19 @@
+// anoop840/end-to-end-ai-native-app/End-to-End-Ai-Native-App-abe9c590d0b9a39301bc24e51dd2618ef037fe4c/src/components/AICreationForm.tsx
 'use client';
 
 import React, { useState, FormEvent, useCallback } from 'react';
 import Modal from './Modal';
 import MultiStepIndicator from './MultiStepIndicator';
-// Note: We use the existing Modal and MultiStepIndicator from the components folder.
 
 // Define the steps for the indicator
 const steps = ['Submit Idea', 'AI Review', 'Approve Change', 'Complete'];
+
+// New interface for the expected AI response to support structured output
+interface AiResponse {
+  message: string;
+  codeSnippet: string; 
+  fileName?: string; // New field from structured AI output
+}
 
 const AICreationForm: React.FC = () => {
   const [text, setText] = useState<string>('');
@@ -14,7 +21,9 @@ const AICreationForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [aiMessage, setAiMessage] = useState<string>('');
-  const [codeSnippet, setCodeSnippet] = useState<string>('');
+  const [codeSnippet, setCodeSnippet] = useState<string>(''); 
+  const [fileName, setFileName] = useState<string>('src/ai-generated-logic.ts'); // Default file name
+
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
@@ -23,11 +32,9 @@ const AICreationForm: React.FC = () => {
 
     setIsLoading(true);
     setError(null);
-    // Start at step 1: AI Review
     setCurrentStep(1); 
 
     try {
-      // 1. Call the new API route
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: {
@@ -36,22 +43,22 @@ const AICreationForm: React.FC = () => {
         body: JSON.stringify({ prompt: text }),
       });
 
-      const data = await response.json();
+      const data: AiResponse = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'AI generation failed');
+        throw new Error(data.message || 'AI generation failed');
       }
 
-      // 2. Store the AI response and open the modal
       setAiMessage(data.message);
       setCodeSnippet(data.codeSnippet);
-      setCurrentStep(2); // Move to step 3: Approve Change
+      setFileName(data.fileName || 'src/ai-generated-logic.ts'); // Use the file name suggested by AI
+      setCurrentStep(2); 
       setIsModalOpen(true);
       
     } catch (err: any) {
       console.error('API Error:', err);
       setError(err.message || 'An unexpected error occurred during AI processing.');
-      setCurrentStep(0); // Reset on error
+      setCurrentStep(0); 
     } finally {
       setIsLoading(false);
     }
@@ -59,14 +66,13 @@ const AICreationForm: React.FC = () => {
   
   const handleApprove = async () => {
     setIsModalOpen(false);
-    setCurrentStep(3); // Temporarily move to Complete step while processing
+    setCurrentStep(3);
 
     try {
-        // Call the new API to apply the code
         const response = await fetch('/api/apply-code', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codeSnippet }),
+            body: JSON.stringify({ codeSnippet, fileName }),
         });
 
         const data = await response.json();
@@ -75,8 +81,7 @@ const AICreationForm: React.FC = () => {
             throw new Error(data.error || 'Failed to apply code.');
         }
 
-        alert(data.message); // Show success message
-        setCurrentStep(3); // Lock the "Complete" step
+        setCurrentStep(3);
 
         // Optional: Reset the form after success
         setTimeout(() => {
@@ -84,56 +89,73 @@ const AICreationForm: React.FC = () => {
             setCodeSnippet('');
             setAiMessage('');
             setCurrentStep(0);
-        }, 5000);
+        }, 3000); 
 
     } catch (err: any) {
         console.error('Code Application Error:', err);
         setError(err.message || 'Failed to save the code to the file system.');
-        setCurrentStep(2); // Move back to review step on error
+        setCurrentStep(2); 
+        setIsModalOpen(true); 
     }
   };
   
   const handleReject = () => {
-    // Logic for rejection (e.g., dismissing the change, allowing user to edit prompt)
     alert('Change Rejected. Please refine your request.');
     setIsModalOpen(false);
-    setCurrentStep(0); // Reset to step 1: Submit Idea for refinement
+    setCurrentStep(0); 
+    setCodeSnippet('');
+    setAiMessage('');
   };
 
   const handleClose = () => {
-    // Allow closing the modal to review the prompt
     setIsModalOpen(false);
   };
   
+  const isComplete = currentStep === 3;
+  const isDisabled = isLoading || isModalOpen || isComplete;
+  
   return (
-    <div className="max-w-xl w-full mx-auto p-4 bg-white dark:bg-black rounded-xl shadow-lg">
-      <h2 className="text-2xl font-bold mb-4 text-center dark:text-zinc-50">Code Generation Workflow</h2>
+    <div className="max-w-xl w-full mx-auto p-6 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl border border-gray-100 dark:border-zinc-800">
+      <h2 className="text-3xl font-bold mb-4 text-center text-gray-900 dark:text-zinc-50">AI-Driven Feature Builder</h2>
       
-      {/* Multi-Step Indicator */}
       <MultiStepIndicator steps={steps} currentStep={currentStep} />
       
       {/* Main Form Area */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Describe the feature or change you want the AI to generate (e.g., 'Add a dark mode toggle to the header')."
-          className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-zinc-800 dark:text-zinc-50 dark:border-zinc-700"
+          className={`w-full h-32 p-4 border rounded-xl resize-none focus:outline-none focus:ring-4 focus:ring-opacity-50 dark:bg-zinc-800 dark:text-zinc-50 transition-all duration-300 ${
+            isDisabled 
+            ? 'border-gray-300 dark:border-zinc-700 cursor-not-allowed opacity-70'
+            : 'border-blue-300 dark:border-blue-600 focus:ring-blue-500/50'
+          }`}
           required
-          disabled={isLoading || isModalOpen}
+          disabled={isDisabled}
         />
         <button
           type="submit"
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors disabled:bg-gray-400"
-          disabled={isLoading || isModalOpen || currentStep === 3}
+          className={`w-full font-extrabold py-3 px-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center space-x-2 ${
+            isDisabled
+              ? 'bg-gray-400 dark:bg-zinc-700 text-gray-600 dark:text-zinc-400 cursor-not-allowed'
+              : 'bg-emerald-500 hover:bg-emerald-600 text-white hover:scale-[1.01] active:scale-[0.99] shadow-emerald-500/50'
+          }`}
+          disabled={isDisabled}
         >
-          {isLoading ? 'AI Thinking...' : currentStep === 3 ? 'Process Complete' : 'Generate Code Idea'}
+          {isLoading && (
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 1116 0A8 8 0 014 12z"></path>
+            </svg>
+          )}
+          {isLoading ? 'Consulting AI...' : isComplete ? 'Task Completed' : 'Generate Code Solution'}
         </button>
       </form>
       
       {/* Error Message */}
       {error && (
-        <div className="mt-4 p-3 bg-red-100 text-red-700 border border-red-400 rounded-lg">
+        <div className="mt-4 p-4 bg-red-100 text-red-700 border border-red-400 rounded-xl dark:bg-red-950 dark:text-red-300 dark:border-red-700 text-center">
           Error: {error}
         </div>
       )}
@@ -149,8 +171,8 @@ const AICreationForm: React.FC = () => {
       />
       
       {/* Completion Message */}
-      {currentStep === 3 && (
-        <div className="mt-4 p-3 bg-green-100 text-green-700 border border-green-400 rounded-lg text-center font-medium">
+      {isComplete && (
+        <div className="mt-4 p-4 bg-emerald-100 text-emerald-800 border border-emerald-400 rounded-xl dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-700 text-center font-bold">
           ✅ AI-driven task completed and approved! Ready for a new task.
         </div>
       )}

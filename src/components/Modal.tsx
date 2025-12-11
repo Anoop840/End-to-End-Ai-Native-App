@@ -1,4 +1,6 @@
 import React from 'react';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 interface ModalProps {
   isOpen: boolean;
@@ -17,33 +19,47 @@ const Modal: React.FC<ModalProps> = ({ isOpen, message, codeSnippet, onApprove, 
       onClose();
     }
   };
+  // Simple heuristic to determine language for highlighting
+  const language = codeSnippet.trim().startsWith('import') || codeSnippet.trim().includes('const') 
+    ? (codeSnippet.trim().includes('React.FC') || codeSnippet.trim().includes('.tsx') ? 'tsx' : 'typescript')
+    : 'javascript';
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity"
       onClick={handleBackdropClick}
     >
-      <div className="bg-white rounded-lg p-6 max-w-lg w-full mx-4 max-h-96 overflow-y-auto">
-        <div className="mb-4">
-          <p className="text-gray-700 text-center">{message}</p>
+      <div className="bg-white dark:bg-zinc-800 rounded-xl p-8 max-w-2xl w-full mx-4 shadow-2xl transform transition-transform scale-100 max-h-[90vh] overflow-hidden flex flex-col">
+        <h3 className="text-xl font-bold mb-4 text-center text-gray-900 dark:text-zinc-50">AI Proposed Solution</h3>
+        <div className="mb-4 text-center">
+          <p className="text-gray-700 dark:text-zinc-300 font-medium">{message}</p>
         </div>
-        <div className="mb-6">
-          <pre className="bg-gray-100 p-4 rounded-lg text-sm overflow-x-auto">
-            <code>{codeSnippet}</code>
-          </pre>
+        
+        {/* Code Snippet with Syntax Highlighting */}
+        <div className="mb-6 flex-grow overflow-y-auto rounded-lg border border-zinc-700">
+          <SyntaxHighlighter language={language} style={vscDarkPlus} showLineNumbers={true} customStyle={{ 
+            borderRadius: '0.5rem', 
+            padding: '1rem',
+            margin: 0,
+            fontSize: '0.8rem',
+            lineHeight: '1.4'
+          }}>
+            {codeSnippet}
+          </SyntaxHighlighter>
         </div>
-        <div className="flex justify-center space-x-4">
+
+        <div className="flex justify-center space-x-4 pt-4 border-t border-gray-200 dark:border-zinc-700">
           <button
             onClick={onReject}
-            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors"
+            className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-full shadow-md transition-all duration-200 hover:scale-[1.02]"
           >
-            Reject
+            Reject & Refine
           </button>
           <button
             onClick={onApprove}
-            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
+            className="px-6 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-full shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
-            Approve
+            Approve & Apply Code
           </button>
         </div>
       </div>
