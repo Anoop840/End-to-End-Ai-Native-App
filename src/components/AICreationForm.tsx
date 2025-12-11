@@ -1,4 +1,3 @@
-// anoop840/end-to-end-ai-native-app/End-to-End-Ai-Native-App-abe9c590d0b9a39301bc24e51dd2618ef037fe4c/src/components/AICreationForm.tsx
 'use client';
 
 import React, { useState, FormEvent, useCallback } from 'react';
@@ -25,7 +24,14 @@ const AICreationForm: React.FC = () => {
   const [fileName, setFileName] = useState<string>('src/ai-generated-logic.ts'); // Default file name
 
   const [error, setError] = useState<string | null>(null);
-
+  const handleResetForm = useCallback(() => {
+      setText('');
+      setCodeSnippet('');
+      setAiMessage('');
+      setFileName('src/ai-generated-logic.ts');
+      setCurrentStep(0);
+      setError(null);
+  }, []);
   const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!text.trim()) return;

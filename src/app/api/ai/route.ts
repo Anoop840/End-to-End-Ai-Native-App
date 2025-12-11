@@ -17,7 +17,7 @@ const fileOperationSchema = {
     properties: {
         fileName: {
             type: Type.STRING,
-            description: "The target file path (e.g., src/components/MyComponent.tsx). For this initial implementation, always set this to 'src/ai-generated-logic.ts'."
+            description: "The target file path (e.g., src/components/MyComponent.tsx or src/app/page.tsx). For this initial implementation, always set this to 'src/ai-generated-logic.ts'."
         },
         codeSnippet: {
             type: Type.STRING,
