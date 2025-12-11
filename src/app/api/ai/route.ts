@@ -45,12 +45,11 @@ export async function POST(request: Request) {
     const { prompt }: RequestBody = await request.json();
 
     if (!prompt) {
-      return new NextResponse(JSON.stringify({ error: "Prompt is required" }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      return new NextResponse(JSON.stringify({ message: "Prompt is required" }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
     // New AI Prompt to enforce structured JSON output
     const aiPrompt = `Review the following user request. Generate an elegant and complete TypeScript/React code solution that addresses the request. The solution should be suitable for a new file at 'src/ai-generated-logic.ts'. Then, create a short message to the user asking for approval.
-
 User Request: ${prompt}
 
 Output a single JSON object that conforms to the provided schema. The 'codeSnippet' field must contain the full, runnable code.`;
@@ -78,6 +77,18 @@ Output a single JSON object that conforms to the provided schema. The 'codeSnipp
 
   } catch (error) {
     console.error("AI API Error:", error);
-    return new NextResponse(JSON.stringify({ error: "Failed to generate AI content. Check server logs." }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    // FIX: Changed 'error' key to 'message' key to ensure the frontend displays the correct error.
+    let errorMessage = "Failed to generate AI content. Check server logs.";
+    
+    if (error instanceof Error) {
+        // Provide more detailed error message to the client, e.g., if API key is missing
+        errorMessage = error.message.includes('API key') 
+            ? "AI generation failed: GEMINI_API_KEY is likely missing or invalid." 
+            : error.message;
+    } else if (typeof error === 'string') {
+        errorMessage = error;
+    }
+
+    return new NextResponse(JSON.stringify({ message: errorMessage }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }

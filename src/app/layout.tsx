@@ -7,7 +7,7 @@ const geistSans = Inter({
   subsets: ["latin"],
 });
 
-const geistMono = Source_Code_Pro({
+const geistMono = Source_Code_Pro ({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
