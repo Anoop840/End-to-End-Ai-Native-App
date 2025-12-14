@@ -95,8 +95,9 @@ Output a single JSON object that conforms to the provided schema. The 'codeSnipp
             fileName: fileOperation.fileName
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Developer Agent API Error:", error);
-        return new NextResponse(JSON.stringify({ error: `Developer Agent failed. Original Error: ${error.message || error.stack}` }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return new NextResponse(JSON.stringify({ error: `Developer Agent failed. Original Error: ${errorMessage}` }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 }
